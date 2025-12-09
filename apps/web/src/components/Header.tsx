@@ -5,6 +5,14 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useOrgContext } from "./org-context";
 import { useEffect, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 export function Header() {
   const router = useRouter();
@@ -40,28 +48,29 @@ export function Header() {
               </Link>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-zinc-500">Org</span>
-                <select
-                  className="rounded-md border px-2 py-1 text-sm"
+                <Select
                   value={currentOrgId}
-                  onChange={(e) => setCurrentOrgId(e.target.value)}
+                  onValueChange={(val) => setCurrentOrgId(val)}
                   disabled={loading || orgs.length === 0}
                 >
-                  {orgs.length === 0 ? (
-                    <option value="">No orgs</option>
-                  ) : null}
-                  {orgs.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-9 w-44">
+                    <SelectValue placeholder="Select org" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {orgs.length === 0 ? (
+                      <SelectItem value="">No orgs</SelectItem>
+                    ) : null}
+                    {orgs.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <button
-                onClick={onLogout}
-                className="rounded-md border px-3 py-1 text-sm"
-              >
+              <Button variant="outline" size="sm" onClick={onLogout}>
                 Logout
-              </button>
+              </Button>
             </>
           ) : (
             <>

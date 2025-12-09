@@ -4,6 +4,18 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useOrgContext } from "@/components/org-context";
 import { useRequireSession } from "@/hooks/useRequireSession";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 type Project = { id: string; name: string; description: string | null };
 
@@ -78,61 +90,58 @@ export default function ProjectsPage() {
         <label className="text-sm font-medium" htmlFor="org">
           Organization
         </label>
-        <select
-          id="org"
-          className="w-full rounded-md border px-3 py-2 text-sm"
+        <Select
           value={currentOrgId}
-          onChange={async (e) => {
-            const orgId = e.target.value;
-            setCurrentOrgId(orgId);
-          }}
+          onValueChange={(orgId) => setCurrentOrgId(orgId)}
         >
-          <option value="">Select an organization</option>
-          {orgs.map((org) => (
-            <option key={org.id} value={org.id}>
-              {org.name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select an organization" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Select an organization</SelectItem>
+            {orgs.map((org) => (
+              <SelectItem key={org.id} value={org.id}>
+                {org.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <form onSubmit={onCreate} className="space-y-3 rounded-md border bg-white p-4">
-        <div className="space-y-2">
-          <label className="block text-sm font-medium" htmlFor="name">
-            Project name
-          </label>
-          <input
-            id="name"
-            className="w-full rounded-md border px-3 py-2 text-sm"
-            placeholder="New project"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          disabled={!currentOrgId}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="block text-sm font-medium" htmlFor="description">
-            Description (optional)
-          </label>
-          <textarea
-            id="description"
-            className="w-full rounded-md border px-3 py-2 text-sm"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          disabled={!currentOrgId}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={!currentOrgId || !name.trim()}
-          className="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-60"
-        >
-          Create project
-        </button>
-      </form>
+      <Card>
+        <CardHeader>
+          <CardTitle>Create project</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onCreate} className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="name">Project name</Label>
+              <Input
+                id="name"
+                placeholder="New project"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={!currentOrgId}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (optional)</Label>
+              <Textarea
+                id="description"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={!currentOrgId}
+              />
+            </div>
+            <Button type="submit" disabled={!currentOrgId || !name.trim()}>
+              Create project
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <div className="rounded-md border bg-white">
         {loading ? (

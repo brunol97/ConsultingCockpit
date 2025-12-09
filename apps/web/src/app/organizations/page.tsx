@@ -4,6 +4,10 @@ import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useOrgContext } from "@/components/org-context";
 import { useRequireSession } from "@/hooks/useRequireSession";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function OrganizationsPage() {
   useRequireSession();
@@ -49,38 +53,50 @@ export default function OrganizationsPage() {
         </p>
       </div>
 
-      <form onSubmit={onCreate} className="flex gap-3">
-        <input
-          className="min-w-0 flex-1 rounded-md border px-3 py-2 text-sm"
-          placeholder="Organization name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button
-          type="submit"
-          className="rounded-md bg-black px-3 py-2 text-sm text-white"
-        >
-          Create
-        </button>
-      </form>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      <Card>
+        <CardHeader>
+          <CardTitle>Create organization</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onCreate} className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="org-name">Organization name</Label>
+              <Input
+                id="org-name"
+                placeholder="Organization name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            <Button type="submit" disabled={loading || !name.trim()}>
+              {loading ? "Creating..." : "Create"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      <div className="rounded-md border bg-white">
-        {loading ? (
-          <p className="p-4 text-sm text-zinc-600">Creating...</p>
-        ) : orgs.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-600">No organizations yet.</p>
-        ) : (
-          <ul className="divide-y">
-            {orgs.map((org) => (
-              <li key={org.id} className="p-4">
-                <div className="font-medium">{org.name}</div>
-                <div className="text-xs text-zinc-500">{org.id}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Your organizations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-sm text-zinc-600">Creating...</p>
+          ) : orgs.length === 0 ? (
+            <p className="text-sm text-zinc-600">No organizations yet.</p>
+          ) : (
+            <ul className="divide-y rounded-md border">
+              {orgs.map((org) => (
+                <li key={org.id} className="p-4">
+                  <div className="font-medium">{org.name}</div>
+                  <div className="text-xs text-zinc-500">{org.id}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
