@@ -1,60 +1,43 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-
-type Organization = {
-  id: string;
-  name: string;
-  created_at: string | null;
-};
+import { useOrgContext } from "@/components/org-context";
+import { useRequireSession } from "@/hooks/useRequireSession";
 
 export default function OrganizationsPage() {
-  const router = useRouter();
-  const [orgs, setOrgs] = useState<Organization[]>([]);
+  useRequireSession();
+  const { orgs, refreshOrgs, setCurrentOrgId } = useOrgContext();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        router.replace("/login");
-        return;
-      }
-      const { data, error: orgError } = await supabase
-        .from("organizations")
-        .select("id,name,created_at")
-        .order("created_at", { ascending: true });
-      if (orgError) {
-        setError(orgError.message);
-      } else {
-        setOrgs(data ?? []);
-      }
-      setLoading(false);
-    };
-    load();
-  }, [router]);
+  const [loading, setLoading] = useState(false);
 
   const onCreate = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!name.trim()) return;
-    const { error: insertError } = await supabase
+    setLoading(true);
+    const { data: insertData, error: insertError } = await supabase
       .from("organizations")
-      .insert({ name });
+      .insert({ name })
+      .select("id")
+      .single();
     if (insertError) {
       setError(insertError.message);
-    } else {
-      const { data } = await supabase
-        .from("organizations")
-        .select("id,name,created_at")
-        .order("created_at", { ascending: true });
-      setOrgs(data ?? []);
-      setName("");
+      setLoading(false);
+      return;
     }
+    if (insertData?.id) {
+      await supabase.from("organization_members").insert({
+        org_id: insertData.id,
+        role: "admin",
+        user_id: (await supabase.auth.getUser()).data.user?.id ?? null,
+      });
+      await refreshOrgs();
+      setCurrentOrgId(insertData.id);
+    }
+    setName("");
+    setLoading(false);
   };
 
   return (
@@ -84,7 +67,7 @@ export default function OrganizationsPage() {
 
       <div className="rounded-md border bg-white">
         {loading ? (
-          <p className="p-4 text-sm text-zinc-600">Loading...</p>
+          <p className="p-4 text-sm text-zinc-600">Creating...</p>
         ) : orgs.length === 0 ? (
           <p className="p-4 text-sm text-zinc-600">No organizations yet.</p>
         ) : (

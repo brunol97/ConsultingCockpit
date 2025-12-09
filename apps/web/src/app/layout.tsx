@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { OrgProvider } from "@/components/org-context";
+import { Header } from "@/components/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,29 +26,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-50 text-zinc-900`}>
-        <div className="min-h-screen">
-          <header className="border-b bg-white">
-            <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-              <span className="font-semibold">Consulting Cockpit</span>
-              <nav className="flex gap-4 text-sm">
-                <a href="/login" className="hover:text-black">
-                  Login
-                </a>
-                <a href="/register" className="hover:text-black">
-                  Register
-                </a>
-                <a href="/organizations" className="hover:text-black">
-                  Organizations
-                </a>
-                <a href="/projects" className="hover:text-black">
-                  Projects
-                </a>
-              </nav>
-            </div>
-          </header>
-          <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
-        </div>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-50 text-zinc-900`}
+      >
+        <OrgProvider>
+          <div className="min-h-screen">
+            <Header />
+            <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
+          </div>
+        </OrgProvider>
       </body>
     </html>
   );

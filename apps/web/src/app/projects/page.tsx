@@ -1,55 +1,36 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { useOrgContext } from "@/components/org-context";
+import { useRequireSession } from "@/hooks/useRequireSession";
 
-type Organization = { id: string; name: string };
 type Project = { id: string; name: string; description: string | null };
 
 export default function ProjectsPage() {
-  const router = useRouter();
-  const [orgs, setOrgs] = useState<Organization[]>([]);
-  const [selectedOrg, setSelectedOrg] = useState<string>("");
+  useRequireSession();
+  const { orgs, currentOrgId, setCurrentOrgId } = useOrgContext();
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const selectedOrgName = useMemo(
-    () => orgs.find((o) => o.id === selectedOrg)?.name ?? "",
-    [orgs, selectedOrg]
+    () => orgs.find((o) => o.id === currentOrgId)?.name ?? "",
+    [orgs, currentOrgId]
   );
 
   useEffect(() => {
-    const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        router.replace("/login");
-        return;
-      }
-      const { data: orgData, error: orgError } = await supabase
-        .from("organizations")
-        .select("id,name")
-        .order("created_at", { ascending: true });
-      if (orgError) {
-        setError(orgError.message);
-        setLoading(false);
-        return;
-      }
-      setOrgs(orgData ?? []);
-      const first = orgData?.[0]?.id ?? "";
-      setSelectedOrg(first);
-      if (first) {
-        await loadProjects(first);
-      }
-      setLoading(false);
-    };
-    load();
-  }, [router]);
+    if (currentOrgId) {
+      loadProjects(currentOrgId);
+    } else {
+      setProjects([]);
+    }
+  }, [currentOrgId]);
 
   const loadProjects = async (orgId: string) => {
+    setLoading(true);
     const { data, error: projError } = await supabase
       .from("projects")
       .select("id,name,description")
@@ -60,24 +41,27 @@ export default function ProjectsPage() {
     } else {
       setProjects(data ?? []);
     }
+    setLoading(false);
   };
 
   const onCreate = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!selectedOrg || !name.trim()) return;
+    if (!currentOrgId || !name.trim()) return;
+    setLoading(true);
     const { error: insertError } = await supabase.from("projects").insert({
-      org_id: selectedOrg,
+      org_id: currentOrgId,
       name,
       description: description || null,
     });
     if (insertError) {
       setError(insertError.message);
     } else {
-      await loadProjects(selectedOrg);
+      await loadProjects(currentOrgId);
       setName("");
       setDescription("");
     }
+    setLoading(false);
   };
 
   return (
@@ -97,12 +81,10 @@ export default function ProjectsPage() {
         <select
           id="org"
           className="w-full rounded-md border px-3 py-2 text-sm"
-          value={selectedOrg}
+          value={currentOrgId}
           onChange={async (e) => {
             const orgId = e.target.value;
-            setSelectedOrg(orgId);
-            if (orgId) await loadProjects(orgId);
-            else setProjects([]);
+            setCurrentOrgId(orgId);
           }}
         >
           <option value="">Select an organization</option>
@@ -127,7 +109,7 @@ export default function ProjectsPage() {
             placeholder="New project"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            disabled={!selectedOrg}
+          disabled={!currentOrgId}
           />
         </div>
         <div className="space-y-2">
@@ -140,12 +122,12 @@ export default function ProjectsPage() {
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            disabled={!selectedOrg}
+          disabled={!currentOrgId}
           />
         </div>
         <button
           type="submit"
-          disabled={!selectedOrg || !name.trim()}
+          disabled={!currentOrgId || !name.trim()}
           className="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-60"
         >
           Create project
@@ -155,7 +137,7 @@ export default function ProjectsPage() {
       <div className="rounded-md border bg-white">
         {loading ? (
           <p className="p-4 text-sm text-zinc-600">Loading...</p>
-        ) : !selectedOrg ? (
+        ) : !currentOrgId ? (
           <p className="p-4 text-sm text-zinc-600">
             Select an organization to view projects.
           </p>
